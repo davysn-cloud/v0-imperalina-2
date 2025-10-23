@@ -18,7 +18,22 @@ export default async function DashboardLayout({
     redirect("/login")
   }
 
-  const { data: userData } = await supabase.from("users").select("*").eq("id", user.id).maybeSingle()
+  let { data: userData } = await supabase.from("users").select("*").eq("id", user.id).maybeSingle()
+
+  if (!userData && user.email) {
+    const { data: userByEmail } = await supabase.from("users").select("*").eq("email", user.email).maybeSingle()
+
+    if (userByEmail) {
+      const { data: updatedUser } = await supabase
+        .from("users")
+        .update({ id: user.id })
+        .eq("email", user.email)
+        .select()
+        .single()
+
+      userData = updatedUser
+    }
+  }
 
   if (!userData) {
     const { data: newUser } = await supabase
@@ -32,14 +47,7 @@ export default async function DashboardLayout({
       .select()
       .single()
 
-    return (
-      <div className="flex min-h-screen">
-        <Sidebar user={newUser} />
-        <main className="flex-1 overflow-y-auto bg-background">
-          <div className="container mx-auto p-6 lg:p-8">{children}</div>
-        </main>
-      </div>
-    )
+    userData = newUser
   }
 
   return (
