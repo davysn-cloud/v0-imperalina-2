@@ -13,8 +13,7 @@ export default async function AppointmentsPage() {
 
   if (!user) return null
 
-  // Get user role
-  const { data: userData } = await supabase.from("users").select("role").eq("id", user.id).single()
+  const { data: userData } = await supabase.from("users").select("role").eq("id", user.id).maybeSingle()
 
   // Get appointments based on role
   let appointmentsQuery = supabase
@@ -34,7 +33,11 @@ export default async function AppointmentsPage() {
 
   if (userData?.role === "PROFESSIONAL") {
     // Get professional's appointments
-    const { data: professional } = await supabase.from("professionals").select("id").eq("user_id", user.id).single()
+    const { data: professional } = await supabase
+      .from("professionals")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle()
 
     if (professional) {
       appointmentsQuery = appointmentsQuery.eq("professional_id", professional.id)

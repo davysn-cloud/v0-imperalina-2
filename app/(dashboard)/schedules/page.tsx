@@ -10,8 +10,7 @@ export default async function SchedulesPage() {
 
   if (!user) return null
 
-  // Get user data to check role
-  const { data: userData } = await supabase.from("users").select("role").eq("id", user.id).single()
+  const { data: userData } = await supabase.from("users").select("role").eq("id", user.id).maybeSingle()
 
   // Get professionals list (for admin) or current professional (for professional role)
   let professionals = []
@@ -32,7 +31,7 @@ export default async function SchedulesPage() {
         user:users(name)
       `)
       .eq("user_id", user.id)
-      .single()
+      .maybeSingle()
     professionals = data ? [data] : []
   }
 

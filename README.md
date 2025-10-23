@@ -51,7 +51,7 @@ Sistema completo de agendamentos desenvolvido com Next.js 15, TypeScript, Supaba
 - **Follow In (Pré-atendimento)**: Registro de preferências e estado do cliente 30 minutos antes
 - **Follow Up (Pós-atendimento)**: Registro de insights, conversas e observações técnicas
 - **Perfil Comportamental**: Preferências de bebidas, música, ambiente e cuidados especiais
-- **Dossiês com IA**: Geração automática de briefings personalizados usando Claude AI
+- **Dossiês com IA**: Geração automática de briefings personalizados usando Google Gemini
 - **WhatsApp Integration**: Envio automático de dossiês via WhatsApp 30 minutos antes
 - **Histórico Inteligente**: Sistema aprende com cada atendimento para melhorar o próximo
 
@@ -64,7 +64,7 @@ Sistema completo de agendamentos desenvolvido com Next.js 15, TypeScript, Supaba
 - **Tailwind CSS v4** - Estilização
 - **date-fns** - Manipulação de datas
 - **Sonner** - Notificações toast
-- **Anthropic Claude** - IA para geração de briefings
+- **Google Gemini** - IA para geração de briefings
 - **Twilio/Evolution API** - Integração WhatsApp
 
 ## Estrutura do Banco de Dados
@@ -97,22 +97,14 @@ As variáveis do Supabase já estão configuradas no projeto v0.
 **Variáveis adicionais necessárias:**
 
 \`\`\`env
-# Anthropic AI (obrigatório para briefings)
-ANTHROPIC_API_KEY=sk-ant-...
+# Google Gemini AI (obrigatório para briefings)
+# Obtenha sua chave em: https://makersuite.google.com/app/apikey
+GOOGLE_GENERATIVE_AI_API_KEY=AIza...
 
-# WhatsApp - Escolha um provedor
-
-# Opção 1: Twilio (recomendado)
-WHATSAPP_PROVIDER=twilio
+# WhatsApp via Twilio
 TWILIO_ACCOUNT_SID=AC...
 TWILIO_AUTH_TOKEN=...
 TWILIO_WHATSAPP_NUMBER=+14155238886
-
-# Opção 2: Evolution API (self-hosted)
-# WHATSAPP_PROVIDER=evolution
-# EVOLUTION_API_URL=https://your-evolution-api.com
-# EVOLUTION_API_KEY=...
-# EVOLUTION_INSTANCE=instance-name
 
 # Cron Job Security
 CRON_SECRET=your-random-secret-here
@@ -120,6 +112,34 @@ CRON_SECRET=your-random-secret-here
 # App URL
 NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
 \`\`\`
+
+**Como obter as credenciais:**
+
+1. **Google Gemini API Key**:
+   - Acesse: https://makersuite.google.com/app/apikey
+   - Faça login com sua conta Google
+   - Clique em "Create API Key"
+   - Copie a chave gerada
+
+2. **Twilio WhatsApp**:
+   - Acesse: https://www.twilio.com/console
+   - Crie uma conta (trial gratuito disponível)
+   - Vá em Messaging > Try it out > Send a WhatsApp message
+   - Obtenha suas credenciais:
+     - `TWILIO_ACCOUNT_SID`: Account SID do dashboard
+     - `TWILIO_AUTH_TOKEN`: Auth Token do dashboard
+     - `TWILIO_WHATSAPP_NUMBER`: Número do Twilio Sandbox (+14155238886 para trial)
+   - **Importante**: No trial, você precisa adicionar números de teste no Sandbox
+   - Para produção, solicite aprovação do seu número WhatsApp Business
+
+3. **CRON_SECRET**:
+   - Gere uma string aleatória segura
+   - Exemplo no terminal: `openssl rand -base64 32`
+   - Ou use: https://www.random.org/strings/
+
+4. **NEXT_PUBLIC_APP_URL**:
+   - Desenvolvimento: `http://localhost:3000`
+   - Produção: URL do seu app no Vercel (ex: `https://seu-app.vercel.app`)
 
 ### 2. Executar Scripts SQL
 
@@ -201,7 +221,7 @@ components/
 
 lib/
 ├── ai/                 # Serviços de IA
-│   ├── anthropic-client.ts
+│   ├── gemini-client.ts
 │   ├── briefing-generator.ts
 │   ├── prompts.ts
 │   └── client-history.ts
@@ -271,17 +291,21 @@ O sistema calcula horários disponíveis considerando:
 
 ## Custos Estimados
 
-### Anthropic Claude
-- Modelo: claude-sonnet-4-5
+### Google Gemini
+- Modelo: gemini-1.5-pro
 - ~2000 tokens por briefing
-- Custo: ~$0.006 por briefing
-- 100 briefings/mês = ~$0.60
+- **Grátis até 15 requisições/minuto** (tier gratuito)
+- Tier pago: ~$0.00125 por briefing
+- 100 briefings/mês = **GRÁTIS** ou ~$0.13 (tier pago)
 
 ### WhatsApp (Twilio)
-- Custo: ~$0.005 por mensagem
+- **Trial**: Grátis para números de teste cadastrados no Sandbox
+- **Produção**: ~$0.005 por mensagem enviada
 - 100 mensagens/mês = ~$0.50
 
-### Total: ~$1.10/mês para 100 atendimentos
+### Total: 
+- **Trial/Desenvolvimento**: GRÁTIS (usando tier gratuito do Gemini + Twilio Sandbox)
+- **Produção**: ~$0.50/mês para 100 atendimentos
 
 ## Próximas Melhorias Sugeridas
 
@@ -303,26 +327,36 @@ O sistema calcula horários disponíveis considerando:
 
 ### Briefings não estão sendo gerados
 
-1. Verifique se `ANTHROPIC_API_KEY` está configurada
+1. Verifique se `GOOGLE_GENERATIVE_AI_API_KEY` está configurada
 2. Verifique se o cron job está ativo no Vercel
 3. Verifique logs em `/api/cron/generate-briefings`
+4. Teste a API Key em: https://makersuite.google.com/
 
 ### WhatsApp não está enviando
 
-1. Verifique credenciais do provedor (Twilio/Evolution)
-2. Verifique se profissional tem telefone cadastrado
-3. Teste manualmente via `/api/whatsapp/send-briefing`
+1. **Verifique credenciais do Twilio**:
+   - `TWILIO_ACCOUNT_SID` está correto?
+   - `TWILIO_AUTH_TOKEN` está correto?
+   - `TWILIO_WHATSAPP_NUMBER` está no formato correto (+14155238886)?
 
-### Follow Up não está salvando
+2. **Trial/Sandbox**:
+   - Número do profissional está cadastrado no Twilio Sandbox?
+   - Profissional enviou mensagem de ativação para o Sandbox?
+   - Acesse: https://console.twilio.com/us1/develop/sms/try-it-out/whatsapp-learn
 
-1. Verifique se tabelas foram criadas (scripts 07-09)
-2. Verifique permissões RLS no Supabase
-3. Verifique console do navegador para erros
+3. **Produção**:
+   - Seu número WhatsApp Business foi aprovado pelo Twilio?
+   - Template de mensagem foi aprovado?
+
+4. **Geral**:
+   - Profissional tem telefone cadastrado no formato internacional (+5521999999999)?
+   - Teste manualmente via `/api/whatsapp/send-briefing`
+   - Verifique logs do Twilio em: https://console.twilio.com/us1/monitor/logs/sms
 
 ## Suporte
 
 Para dúvidas ou problemas:
 - Documentação Supabase: https://supabase.com/docs
 - Documentação Next.js: https://nextjs.org/docs
-- Documentação Anthropic: https://docs.anthropic.com
-- Documentação Twilio: https://www.twilio.com/docs
+- Documentação Google AI: https://ai.google.dev/docs
+- Documentação Twilio: https://www.twilio.com/docs/whatsapp

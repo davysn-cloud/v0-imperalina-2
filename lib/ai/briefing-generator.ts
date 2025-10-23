@@ -1,4 +1,4 @@
-import { anthropic, AI_MODEL } from "./anthropic-client"
+import { getGenerativeModel } from "./gemini-client"
 import { buildBriefingPrompt, extractSummary, extractTopics, extractSuggestedTopics, extractAlerts } from "./prompts"
 
 interface ClientProfile {
@@ -70,21 +70,14 @@ export async function generateAIBriefing(data: BriefingData): Promise<GeneratedB
   const prompt = buildBriefingPrompt(data)
 
   try {
-    const message = await anthropic.messages.create({
-      model: AI_MODEL,
-      max_tokens: 2048,
-      temperature: 0.7,
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-    })
-
-    const content = message.content[0].type === "text" ? message.content[0].text : ""
+    const model = getGenerativeModel()
+    const result = await model.generateContent(prompt)
+    const response = result.response
+    const content = response.text()
 
     const generationTime = Date.now() - startTime
+
+    const estimatedTokens = Math.ceil((prompt.length + content.length) / 4)
 
     return {
       content,
@@ -95,7 +88,7 @@ export async function generateAIBriefing(data: BriefingData): Promise<GeneratedB
       lastVisitSummary: getLastVisitSummary(data.previousVisits[0]),
       alerts: extractAlerts(content),
       reminders: extractReminders(data.previousVisits),
-      tokensUsed: message.usage.input_tokens + message.usage.output_tokens,
+      tokensUsed: estimatedTokens,
       generationTime,
     }
   } catch (error) {

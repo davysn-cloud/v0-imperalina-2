@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { processUpcomingAppointments, retryFailedBriefings } from "@/lib/cron/briefing-scheduler"
 
 export const dynamic = "force-dynamic"
-export const maxDuration = 300 // 5 minutes
+export const maxDuration = 60 // 1 minute (max for Hobby plan)
 
 export async function GET(request: NextRequest) {
   // Security: Check authorization header
